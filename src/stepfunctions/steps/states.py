@@ -17,7 +17,7 @@ import logging
 
 from stepfunctions.exceptions import DuplicateStatesInChain
 from stepfunctions.steps.fields import Field
-from stepfunctions.inputs import ExecutionInput, StepInput
+from stepfunctions.inputs import ExecutionInput, StepInput, StepResult
 
 
 logger = logging.getLogger('stepfunctions.states')
@@ -53,7 +53,7 @@ class Block(object):
             return params
         modified_parameters = {}
         for k, v in params.items():
-            if isinstance(v, (ExecutionInput, StepInput)):
+            if isinstance(v, (ExecutionInput, StepInput, StepResult)):
                 modified_key = "{key}.$".format(key=k)
                 modified_parameters[modified_key] = v.to_jsonpath()
             elif isinstance(v, dict):
@@ -71,7 +71,7 @@ class Block(object):
         for k, v in self.fields.items():
             if v is not None or k in fields_accepted_as_none:
                 k = to_pascalcase(k)
-                if k == to_pascalcase(Field.Parameters.value):
+                if k == to_pascalcase(Field.Parameters.value) or k == to_pascalcase(Field.ResultSelector.value):
                     result[k] = self._replace_placeholders(v)
                 else:
                     result[k] = v
@@ -171,6 +171,7 @@ class State(Block):
             comment (str, optional): Human-readable comment or description. (default: None)
             input_path (str, optional): Path applied to the state’s raw input to select some or all of it; that selection is used by the state. (default: '$')
             parameters (dict, optional): The value of this field becomes the effective input for the state.
+            result_selector (dict, optional): The value of this field becomes the effective result of the state.
             result_path (str, optional): Path specifying the raw input’s combination with or replacement by the state’s result. (default: '$')
             output_path (str, optional): Path applied to the state’s output after the application of `result_path`, producing the effective output which serves as the raw input for the next state. (default: '$')
         """
@@ -195,6 +196,7 @@ class State(Block):
             Field.InputPath,
             Field.OutputPath,
             Field.Parameters,
+            Field.ResultSelector,
             Field.ResultPath
         ]
 
@@ -207,6 +209,16 @@ class State(Block):
         """
         if Field.Parameters in self.allowed_fields():
             self.fields[Field.Parameters.value] = params
+
+    def update_result_selector(self, result_selector):
+        """
+        Update `result_selector` field in the state, if supported.
+
+        Args:
+            params (dict or list): The value of this field becomes the effective result of the state.
+        """
+        if Field.ResultSelector in self.allowed_fields():
+            self.fields[Field.ResultSelector.value] = result_selector
 
     def next(self, next_step):
         """
@@ -485,6 +497,7 @@ class Parallel(State):
             comment (str, optional): Human-readable comment or description. (default: None)
             input_path (str, optional): Path applied to the state’s raw input to select some or all of it; that selection is used by the state. (default: '$')
             parameters (dict, optional): The value of this field becomes the effective input for the state.
+            result_selector (dict, optional): The value of this field becomes the effective result of the state.
             result_path (str, optional): Path specifying the raw input’s combination with or replacement by the state’s result. (default: '$')
             output_path (str, optional): Path applied to the state’s output after the application of `result_path`, producing the effective output which serves as the raw input for the next state. (default: '$')
         """
@@ -497,6 +510,7 @@ class Parallel(State):
             Field.InputPath,
             Field.OutputPath,
             Field.Parameters,
+            Field.ResultSelector,
             Field.ResultPath,
             Field.Retry,
             Field.Catch
@@ -537,6 +551,7 @@ class Map(State):
             comment (str, optional): Human-readable comment or description. (default: None)
             input_path (str, optional): Path applied to the state’s raw input to select some or all of it; that selection is used by the state. (default: '$')
             parameters (dict, optional): The value of this field becomes the effective input for the state.
+            result_selector (dict, optional): The value of this field becomes the effective result of the state.
             result_path (str, optional): Path specifying the raw input’s combination with or replacement by the state’s result. (default: '$')
             output_path (str, optional): Path applied to the state’s output after the application of `result_path`, producing the effective output which serves as the raw input for the next state. (default: '$')
         """
@@ -557,6 +572,7 @@ class Map(State):
             Field.InputPath,
             Field.OutputPath,
             Field.Parameters,
+            Field.ResultSelector,
             Field.ResultPath,
             Field.Retry,
             Field.Catch,
@@ -587,6 +603,7 @@ class Task(State):
             comment (str, optional): Human-readable comment or description. (default: None)
             input_path (str, optional): Path applied to the state’s raw input to select some or all of it; that selection is used by the state. (default: '$')
             parameters (dict, optional): The value of this field becomes the effective input for the state.
+            result_selector (dict, optional): The value of this field becomes the effective result of the state.
             result_path (str, optional): Path specifying the raw input’s combination with or replacement by the state’s result. (default: '$')
             output_path (str, optional): Path applied to the state’s output after the application of `result_path`, producing the effective output which serves as the raw input for the next state. (default: '$')
         """
@@ -598,6 +615,7 @@ class Task(State):
             Field.InputPath,
             Field.OutputPath,
             Field.Parameters,
+            Field.ResultSelector,
             Field.ResultPath,
             Field.TimeoutSeconds,
             Field.HeartbeatSeconds,
