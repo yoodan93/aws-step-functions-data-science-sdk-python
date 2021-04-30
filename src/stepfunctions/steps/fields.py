@@ -54,9 +54,12 @@ class Field(Enum):
     MaxConcurrency   = 'max_concurrency'
 
     # Task state fields
-    Resource         = 'resource'
-    TimeoutSeconds   = 'timeout_seconds'
-    HeartbeatSeconds = 'heartbeat_seconds'
+    Resource             = 'resource'
+    TimeoutSeconds       = 'timeout_seconds'
+    TimeoutSecondsPath   = 'timeout_seconds_path'
+    HeartbeatSeconds     = 'heartbeat_seconds'
+    HeartbeatSecondsPath = 'heartbeat_seconds_path'
+
 
     # Retry and catch fields
     ErrorEquals      = 'error_equals'
